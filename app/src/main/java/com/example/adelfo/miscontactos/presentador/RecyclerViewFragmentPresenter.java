@@ -1,0 +1,113 @@
+package com.example.adelfo.miscontactos.presentador;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.util.Log;
+import android.widget.Toast;
+
+import com.example.adelfo.miscontactos.MainActivity;
+import com.example.adelfo.miscontactos.R;
+import com.example.adelfo.miscontactos.db.ConstructorContactos;
+import com.example.adelfo.miscontactos.db.ConstructorUsuarios;
+import com.example.adelfo.miscontactos.fragment.IRecyclerViewFragmentView;
+import com.example.adelfo.miscontactos.pojo.Contacto;
+import com.example.adelfo.miscontactos.pojo.Usuario;
+import com.example.adelfo.miscontactos.restAPI.ConstantesRestApi;
+import com.example.adelfo.miscontactos.restAPI.EndpointsApi;
+import com.example.adelfo.miscontactos.restAPI.Model.ContactoResponse;
+import com.example.adelfo.miscontactos.restAPI.Model.UsuarioResponse;
+import com.example.adelfo.miscontactos.restAPI.adapter.RestApiAdapter;
+import com.google.gson.Gson;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+/**
+ * Created by Adelfo on 21/11/2016.
+ */
+
+public class RecyclerViewFragmentPresenter implements IRecyclerViewFragmentPresenter{
+    private IRecyclerViewFragmentView iRecyclerViewFragmentView;
+    private Context context;
+    private ConstructorContactos constructorContactos;
+    private ArrayList<Contacto> contactos;
+    private ArrayList<Contacto> contactos2;
+
+    private ConstructorUsuarios constructorUsuarios;
+    private ArrayList<Usuario> usuarios;
+
+    public RecyclerViewFragmentPresenter(IRecyclerViewFragmentView iRecyclerViewFragmentView, Context context) {
+        this.iRecyclerViewFragmentView = iRecyclerViewFragmentView;
+        this.context = context;
+        obtenerMediosRecientes();
+        obtenerIDUsuario();
+    }
+
+    @Override
+    public void obtenerContactosBaseDatos() {
+        constructorContactos = new ConstructorContactos(context);
+        constructorUsuarios = new ConstructorUsuarios(context);
+        contactos = constructorContactos.obtenerDatos();
+        contactos2 = constructorContactos.obtenerDatos();
+        usuarios = constructorUsuarios.obtenerDatos();
+        mostrarContactosRV();
+    }
+
+    @Override
+    public void obtenerMediosRecientes() {
+
+        SharedPreferences miPrefereciaCompartida = context.getSharedPreferences("UsuariosPetagram", Context.MODE_PRIVATE);
+        String usuario_id = miPrefereciaCompartida.getString("usuario_id", "4179481767");
+
+        RestApiAdapter restApiAdapter = new RestApiAdapter();
+        Gson gsonMediaRecent = restApiAdapter.construyeGsonDeserializadorMediaRecent();
+        EndpointsApi endpointsApi = restApiAdapter.establecerConexionRestApiInstagram(gsonMediaRecent);
+        Call<ContactoResponse> contactoResponseCall = endpointsApi.getRecentMedia(usuario_id, "4179481767.6a67fa6.ca3f237670924e89b088d8a088a08216");
+        contactoResponseCall.enqueue(new Callback<ContactoResponse>() {
+            @Override
+            public void onResponse(Call<ContactoResponse> call, Response<ContactoResponse> response) {
+                ContactoResponse contactoResponse = response.body();
+                contactos = contactoResponse.getContactos();
+
+                iRecyclerViewFragmentView.inicializarAdaptadorRV(iRecyclerViewFragmentView.crearAdaptador(contactos));
+
+
+                mostrarContactosRV();
+            }
+            @Override
+            public void onFailure(Call<ContactoResponse> call, Throwable t) {
+                Toast.makeText(context, "Fallo la conexión1", Toast.LENGTH_SHORT).show();
+                Log.e("Fallo la conexión: ", t.toString());
+            }
+        });
+    }
+
+    @Override
+    public void obtenerIDUsuario() {
+        RestApiAdapter restApiAdapter = new RestApiAdapter();
+        Gson gsonUsuario = restApiAdapter.construyeGsonDeserializadorUsuarioID();
+        EndpointsApi endpointsApi = restApiAdapter.establecerConexionRestApiInstagram(gsonUsuario);
+        Call<UsuarioResponse> usuarioResponseCall = endpointsApi.getUser(MainActivity.usuario_nombre, "4179481767.6a67fa6.ca3f237670924e89b088d8a088a08216");
+
+        usuarioResponseCall.enqueue(new Callback<UsuarioResponse>() {
+
+            @Override
+            public void onResponse(Call<UsuarioResponse> call, Response<UsuarioResponse> response) {
+            }
+
+            @Override
+            public void onFailure(Call<UsuarioResponse> call, Throwable t) {
+            }
+        });
+    }
+
+    @Override
+    public void mostrarContactosRV() {
+        iRecyclerViewFragmentView.generarGridLayout();
+    }
+}
