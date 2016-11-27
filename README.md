@@ -1,1 +1,1 @@
-# Petagram
+Esta aplicación fue desarrollada para la evaluación de las actividades correspondientes a la semana 1 del curso "Desarrollo de aplicaciones avanzadas con Android", mostrando principalmente el consumo de servicios web, la API de Instagram  en este caso.
